@@ -1,6 +1,8 @@
 from datetime import datetime
 import requests
 
+from Utilities.utilities import log
+
 def get_current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -14,6 +16,25 @@ def get_city_weather(city):
 def get_user_city():
     city = "bangalore"  # Default city
     return city
+
+
+def run_tool(tool_call,tool_responses):
+    func_name=tool_call.name
+    func_args=tool_call.input
+    log(f"  Function name and function args: {func_name} {str(func_args)}")
+    try:
+        fn = FUNCTION_NAME_TO_FUNCTION_MAP.get(func_name)
+        result = fn(**func_args) if fn else None
+    except Exception as e:
+        result = f"Error executing tool '{func_name}': {str(e)}"
+    log(f"   Tool result: {str(result)}")
+    tool_responses.append({
+            "type":"tool_result",
+            "tool_use_id":tool_call.id,
+            "content":str(result)
+        }
+    )
+    
 
 TOOLS = [
     {

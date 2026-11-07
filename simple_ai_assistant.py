@@ -1,16 +1,23 @@
+#standard libraries
+import os
+from types import SimpleNamespace
+
+#third party libraries
 import anthropic
 from dotenv import load_dotenv
-import os
 
-from tools import TOOLS,FUNCTION_NAME_TO_FUNCTION_MAP
+#local modules
+from Utilities.utilities import chat_stream, count_tool_events, log, show_response
+from tools import TOOLS, run_tool
 
 load_dotenv()#by default looks for .env file 
+
 
 client=anthropic.Anthropic(
     api_key=os.getenv("API_KEY")
 )
 
-system_prompt = "Make Sure to respond in a single line."
+system_prompt = "Make Sure to respond under 100 words"
 messages=[]
 
 while True:
@@ -21,52 +28,55 @@ while True:
     
     messages.append({"role":"user","content":user_input})
 
-    
     for step in range(int(os.getenv("MAX_STEPS"))):
-        response =client.messages.create(
-                model=os.getenv("MODEL"),
-                messages=messages,
-                system=system_prompt,
-                tools= TOOLS,
-                max_tokens=int(os.getenv("MAX_TOKENS"))
-            )
-            
-        print("Initial response=============", response)
-        if response.stop_reason !='tool_use':
+        
+
+        event_obj = chat_stream(messages)
+        
+        full_text=''
+        if event_obj.stop_reason == 'end_turn':
+            for block in event_obj.content:
+                if block.type == "text":
+                    full_text+=block.text
+                    
+            if full_text:
+                messages.append({"role":"assistant","content":full_text})
             break
-        messages.append({
-            "role":"assistant",
-            "content":response.content
-        })
+                        
         
-        tool_responses=[]
-        for content in response.content:
-            if content.type=="tool_use":
-                func_name=content.name
-                func_args=content.input
-                try:
-                    fn = FUNCTION_NAME_TO_FUNCTION_MAP.get(func_name)
-                    result = fn(**func_args) if fn else None
-                    result=result.content if hasattr(result,'content') else result
-                    print("Tool called: ", func_name, "with args: ", func_args, "Result: ", result)
-                except Exception as e:
-                    result = f"Error executing tool '{func_name}': {str(e)}"
-                
-                tool_responses.append({
-                    "type":"tool_result",
-                        "tool_use_id":content.id,
-                            "content":str(result)
-                        }
-                )
-        messages.append({
-            "role":"user",
-            "content":tool_responses
-        })
+        elif event_obj.stop_reason == 'tool_use':
+
+            tool_use_count = count_tool_events(event_obj)
+            log(f"step {step+1}: Model Requested {tool_use_count} tool calls")
+            
+            messages.append({
+                "role":"assistant",
+                "content":event_obj.content
+            })
+            tool_responses=[]
+            for tool in event_obj.content:
+                if tool.type=="tool_use":
+                    tool_obj=SimpleNamespace(
+                        name=tool.name,
+                        input=tool.input,
+                        id=tool.id
+                    )
+                    run_tool(tool_obj,tool_responses)
+            
+            if tool_responses:
+                messages.append({
+                    "role":"user",
+                    "content":tool_responses
+                })
         
+        else:
+            log(f"Unexpected stop reason: {event_obj.stop_reason}")
+            break
     else:
-        print("Maximum steps reached. Ending the conversation.")
+        log("Maximum steps reached. Ending the conversation.")
         fallback = "Sorry , I couldn't provide a complete response within the maximum steps limit."
         messages.append({"role":"assistant","content":fallback})
-        print("Assistant Response 2: ", fallback)
-        continue
-    messages.append({"role":"assistant","content":response.content})
+        log(fallback)
+        
+        
+    
