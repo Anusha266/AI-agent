@@ -1,0 +1,56 @@
+from datetime import datetime
+import requests
+
+def get_current_time():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_city_weather(city):
+    url = f"http://wttr.in/{city}?format=3"
+    response = requests.get(url)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    return response.text
+    
+def get_user_city():
+    city = "bangalore"  # Default city
+    return city
+
+TOOLS = [
+    {
+        "name": "get_current_time",
+        "description": "Get the current date and time in YYYY-MM-DD HH:MM:SS format",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "get_city_weather",
+        "description": "Get the current weather information for a given city.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "description": "Name of the city to get weather information for, e.g., Hyderabad, London, or New York."
+                }
+            },
+            "required": ["city"]
+        }
+    },
+    {
+        "name": "get_user_city",
+        "description": "Get the user's city. Call this function when user asks for weather information without specifying a city.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+]
+FUNCTION_NAME_TO_FUNCTION_MAP = {
+    "get_current_time": get_current_time,
+    "get_city_weather": get_city_weather,
+    "get_user_city": get_user_city
+}
