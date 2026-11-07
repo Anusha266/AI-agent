@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -219,19 +218,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-=======
-# Environment variables
-.env
-.env.*
-
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-venv/
-.venv/
-env/
-ENV/
->>>>>>> 3c42f26 (Built an AI agent with tool-calling capabilities using Anthropic Claude.)
