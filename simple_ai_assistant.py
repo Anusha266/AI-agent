@@ -12,6 +12,7 @@ from tools import TOOLS, run_tool
 
 load_dotenv()#by default looks for .env file 
 
+
 client=anthropic.Anthropic(
     api_key=os.getenv("API_KEY")
 )
@@ -19,13 +20,14 @@ client=anthropic.Anthropic(
 messages=[]
 
 while True:
-    user_input=input("\nYou Anusha: ")
+    user_input=input("\nYou: ")
 
     if user_input.lower() in ["exit","quit","bye","goodbye"]:
         break
     
     messages.append({"role":"user","content":user_input})
 
+    print("\n\nAssistant: ",end='',flush=True)
     try:
         for step in range(int(os.getenv("MAX_STEPS"))):
             
