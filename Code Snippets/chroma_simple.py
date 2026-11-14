@@ -36,9 +36,9 @@ for s in documents:
     embeddings.append(embedding)
 
 
-chroma=chromadb.Client()
+chroma=chromadb.PersistentClient(path="./chromadbStorage")
 
-zorvex_collection=chroma.create_collection(
+zorvex_collection=chroma.get_or_create_collection(
     name="zorvex_technology",
     configuration={
         "hnsw":{
@@ -47,7 +47,7 @@ zorvex_collection=chroma.create_collection(
     }
 )
 
-zorvex_collection.add(
+zorvex_collection.upsert( #it will update if an id is exsiting and content changed, inserts if id was already not there 
     ids=ids,
     documents=documents,
     embeddings=embeddings
